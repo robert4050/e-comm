@@ -1,0 +1,110 @@
+<div class="enterprise-stack-page">
+  <!-- Top Banner -->
+  <div class="page-title-banner">
+    <div class="title-left">
+      <div class="title-icon-box">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        </svg>
+      </div>
+      <div class="title-text">
+        <h2>Enterprise Microservices Stack</h2>
+        <p>Production distributed architecture topology, event streaming, and security matrix.</p>
+      </div>
+    </div>
+    <div class="title-actions">
+      <span class="pro-tag">ENTERPRISE PRO</span>
+    </div>
+  </div>
+
+  <!-- Key Architectural Metrics -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <span class="metric-label">API Gateway Status</span>
+      <div class="metric-val text-green">{{ gatewayHealth }}</div>
+      <span class="metric-sub">Spring Cloud Netty (:8080)</span>
+    </div>
+
+    <div class="metric-card">
+      <span class="metric-label">Transactional Outbox</span>
+      <div class="metric-val">{{ outboxProcessed }} Dispatched</div>
+      <span class="metric-sub text-blue">Kafka: {{ kafkaTopic }}</span>
+    </div>
+
+    <div class="metric-card">
+      <span class="metric-label">Identity & RBAC</span>
+      <div class="metric-val">Clerk IAM</div>
+      <span class="metric-sub text-green">JWT Secured (RS256/HS256)</span>
+    </div>
+
+    <div class="metric-card">
+      <span class="metric-label">Data Tier</span>
+      <div class="metric-val">MySQL + Redis</div>
+      <span class="metric-sub">ACID + Ephemeral Locks</span>
+    </div>
+  </div>
+
+  <!-- Cluster Nodes Table Card -->
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3>Active Cluster Infrastructure Nodes</h3>
+    </div>
+
+    <div class="card-body no-padding">
+      <table class="architect-table">
+        <thead>
+          <tr>
+            <th>Service Node</th>
+            <th>Role & Scope</th>
+            <th>Port</th>
+            <th>Technology Engine</th>
+            <th>Latency</th>
+            <th>Cluster Health</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of services">
+            <td>
+              <div class="service-name-cell">
+                <strong>{{ s.name }}</strong>
+                <small>{{ s.details }}</small>
+              </div>
+            </td>
+            <td><span class="role-pill">{{ s.role }}</span></td>
+            <td><code>:{{ s.port }}</code></td>
+            <td>{{ s.technology }}</td>
+            <td><span class="latency-tag">{{ s.latency }}</span></td>
+            <td><span class="status-pill badge-success">{{ s.status }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Architecture Overview Section -->
+  <div class="dashboard-card info-card">
+    <div class="card-header">
+      <h3>Distributed Architectural Blueprint</h3>
+    </div>
+    <div class="card-body">
+      <div class="blueprint-grid">
+        <div class="blueprint-box">
+          <h4>1. Edge API Gateway Layer</h4>
+          <p>Spring Cloud Gateway acts as the single unified ingress point on port 8080. It handles rate limiting, pre-flight CORS headers, Clerk Bearer token validation, and non-blocking routing to backend microservices.</p>
+        </div>
+        <div class="blueprint-box">
+          <h4>2. Transactional Outbox Pattern</h4>
+          <p>When products or orders are updated, changes write atomically to MySQL and an <code>outbox_events</code> table within the same transaction. A scheduled worker reads pending events every 5 seconds and dispatches them to Apache Kafka KRaft (<code>product.events.v1</code>).</p>
+        </div>
+        <div class="blueprint-box">
+          <h4>3. Clerk Identity & Access Management</h4>
+          <p>Replaced Keycloak with Clerk IAM. Frontends authenticate with Google Workspace or email credentials, obtaining RS256 JWT tokens. Spring Security's <code>ClerkRoleConverter</code> maps claims to <code>ROLE_PRODUCT_MANAGER</code> and <code>ROLE_ADMIN</code> authorities.</p>
+        </div>
+        <div class="blueprint-box">
+          <h4>4. Distributed Sagas & Ephemeral Storage</h4>
+          <p>Checkout orchestrates multi-step sagas across Pricing, Inventory, and Payment. Redis manages 15-minute stock reservation TTL locks preventing race conditions, while Elasticsearch powers full-text fuzzy product search.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

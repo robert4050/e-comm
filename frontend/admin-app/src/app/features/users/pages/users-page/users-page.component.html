@@ -1,0 +1,402 @@
+<div class="users-dashboard">
+  <!-- Top Page Header -->
+  <div class="page-title-banner">
+    <div class="title-left">
+      <div class="icon-bubble">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      </div>
+      <div class="title-text">
+        <h2>Users & Staff Directory</h2>
+        <p>Manage system accounts with 3 essential roles: Super Admin, Admin, and User</p>
+      </div>
+    </div>
+    <div class="title-right">
+      <button class="btn-refresh" (click)="loadUsers()" [disabled]="isLoading()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span>Refresh</span>
+      </button>
+      <button class="btn-create" (click)="openCreateModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Add New User</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats Overview Widgets (Only 3 Roles) -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon-wrapper icon-blue">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <span class="stat-label">Total Accounts</span>
+        <h3 class="stat-value">{{ totalUsers() }}</h3>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrapper icon-purple">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <span class="stat-label">Super Admins</span>
+        <h3 class="stat-value">{{ totalSuperAdmins() }}</h3>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrapper icon-amber">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <span class="stat-label">Admins</span>
+        <h3 class="stat-value">{{ totalAdmins() }}</h3>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrapper icon-emerald">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <span class="stat-label">Users</span>
+        <h3 class="stat-value">{{ totalStandardUsers() }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <div class="controls-card">
+    <div class="search-box">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input 
+        type="text" 
+        [ngModel]="searchTerm()" 
+        (ngModelChange)="searchTerm.set($event)"
+        placeholder="Search by full name or email address..." 
+      />
+    </div>
+
+    <div class="filter-group">
+      <select [ngModel]="selectedRoleFilter()" (ngModelChange)="selectedRoleFilter.set($event)" class="filter-select">
+        <option value="ALL">All Roles</option>
+        <option value="SUPER_ADMIN">Super Admin</option>
+        <option value="ADMIN">Admin</option>
+        <option value="USER">User</option>
+      </select>
+
+      <select [ngModel]="selectedStatusFilter()" (ngModelChange)="selectedStatusFilter.set($event)" class="filter-select">
+        <option value="ALL">All Status</option>
+        <option value="ACTIVE">Active</option>
+        <option value="INACTIVE">Inactive</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ArchitectUI Users Table Card -->
+  <div class="table-card">
+    <div class="table-header">
+      <h4>System Accounts Database ({{ filteredUsers().length }} users)</h4>
+      <span class="seed-indicator">
+        <span class="pulse-dot"></span> Primary Super Admin: <strong>admin&#64;gmail.com</strong>
+      </span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th class="col-id">#</th>
+            <th class="col-avatar">Avatar</th>
+            <th class="col-name">Full Name</th>
+            <th class="col-email">Email</th>
+            <th class="col-role">Role</th>
+            <th class="col-status">Status</th>
+            <th class="col-created">Created At</th>
+            <th class="col-actions text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of filteredUsers(); let i = index">
+            <td class="col-id font-mono">#{{ i + 1 }}</td>
+            <td class="col-avatar">
+              <div class="avatar-circle">
+                <img *ngIf="user.avatarUrl" [src]="user.avatarUrl" [alt]="user.fullName" />
+                <span *ngIf="!user.avatarUrl">{{ user.fullName.charAt(0) }}</span>
+              </div>
+            </td>
+            <td class="col-name">
+              <span class="user-fullname">{{ user.fullName }}</span>
+              <span *ngIf="user.email === 'admin@gmail.com'" class="badge-super">ROOT SUPER ADMIN</span>
+            </td>
+            <td class="col-email font-mono">{{ user.email }}</td>
+            <td class="col-role">
+              <span class="role-badge" [ngClass]="getRoleBadgeClass(user.role)">
+                {{ getRoleLabel(user.role) }}
+              </span>
+            </td>
+            <td class="col-status">
+              <span class="status-pill" [class.status-active]="user.status === 'ACTIVE'" [class.status-inactive]="user.status === 'INACTIVE'">
+                <span class="status-dot"></span>
+                {{ user.status }}
+              </span>
+            </td>
+            <td class="col-created text-muted">
+              {{ user.createdAt ? (user.createdAt | slice:0:10) : '2026-11-17' }}
+            </td>
+            <td class="col-actions text-right">
+              <div class="actions-group">
+                <button class="btn-action btn-edit" (click)="openEditModal(user)" title="Edit User">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  <span>Edit</span>
+                </button>
+                <button 
+                  class="btn-action btn-delete" 
+                  (click)="confirmDelete(user)" 
+                  [disabled]="user.email === 'admin@gmail.com'"
+                  title="Delete User"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  <span>Delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="filteredUsers().length === 0">
+            <td colspan="8" class="empty-state">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+              </svg>
+              <p>No users found matching your filters.</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- CREATE USER MODAL (Only 3 Roles)           -->
+<!-- ========================================== -->
+<div class="modal-backdrop" *ngIf="isCreateModalOpen()" (click)="closeCreateModal()">
+  <div class="modal-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title-box">
+        <h3>Create New User Account</h3>
+        <p>Register a new Super Admin, Admin, or User directly in the database</p>
+      </div>
+      <button class="btn-close" (click)="closeCreateModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="submitCreate()" class="modal-body">
+      <div class="form-group">
+        <label>Full Name *</label>
+        <input 
+          type="text" 
+          [(ngModel)]="createForm.fullName" 
+          name="fullName" 
+          placeholder="e.g. Jessica Adams" 
+          required 
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Email Address *</label>
+        <input 
+          type="email" 
+          [(ngModel)]="createForm.email" 
+          name="email" 
+          placeholder="e.g. jessica@e-comm.local" 
+          required 
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Password *</label>
+        <div class="password-input-wrap">
+          <input 
+            [type]="showPassword() ? 'text' : 'password'" 
+            [(ngModel)]="createForm.password" 
+            name="password" 
+            placeholder="Minimum 4 characters" 
+            required 
+          />
+          <button type="button" class="btn-toggle-pw" (click)="toggleShowPassword()">
+            {{ showPassword() ? 'Hide' : 'Show' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Assigned Role *</label>
+          <select [(ngModel)]="createForm.role" name="role" class="form-select">
+            <option value="SUPER_ADMIN">Super Admin (Full System Control)</option>
+            <option value="ADMIN">Admin (Store & Operations Manager)</option>
+            <option value="USER">User (Standard Customer Account)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Account Status *</label>
+          <select [(ngModel)]="createForm.status" name="status" class="form-select">
+            <option value="ACTIVE">ACTIVE (Authorized to login)</option>
+            <option value="INACTIVE">INACTIVE (Locked account)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Avatar URL (Optional)</label>
+        <input 
+          type="url" 
+          [(ngModel)]="createForm.avatarUrl" 
+          name="avatarUrl" 
+          placeholder="https://images.unsplash.com/..." 
+        />
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeCreateModal()">Cancel</button>
+        <button type="submit" class="btn-submit" [disabled]="isLoading()">
+          {{ isLoading() ? 'Saving...' : 'Create Account' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- EDIT USER MODAL (Only 3 Roles)             -->
+<!-- ========================================== -->
+<div class="modal-backdrop" *ngIf="isEditModalOpen()" (click)="closeEditModal()">
+  <div class="modal-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title-box">
+        <h3>Edit User Details</h3>
+        <p>Update role permissions, status, or reset credentials</p>
+      </div>
+      <button class="btn-close" (click)="closeEditModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="submitEdit()" class="modal-body">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input 
+          type="text" 
+          [(ngModel)]="editForm.fullName" 
+          name="editFullName" 
+          required 
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Email Address</label>
+        <input 
+          type="email" 
+          [(ngModel)]="editForm.email" 
+          name="editEmail" 
+          required 
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Reset Password (leave blank to keep current password)</label>
+        <div class="password-input-wrap">
+          <input 
+            [type]="showPassword() ? 'text' : 'password'" 
+            [(ngModel)]="editForm.password" 
+            name="editPassword" 
+            placeholder="New password (optional)" 
+          />
+          <button type="button" class="btn-toggle-pw" (click)="toggleShowPassword()">
+            {{ showPassword() ? 'Hide' : 'Show' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Role</label>
+          <select [(ngModel)]="editForm.role" name="editRole" class="form-select">
+            <option value="SUPER_ADMIN">Super Admin</option>
+            <option value="ADMIN">Admin</option>
+            <option value="USER">User</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
+          <select [(ngModel)]="editForm.status" name="editStatus" class="form-select">
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="INACTIVE">INACTIVE</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeEditModal()">Cancel</button>
+        <button type="submit" class="btn-submit" [disabled]="isLoading()">
+          {{ isLoading() ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- DELETE CONFIRMATION MODAL                  -->
+<!-- ========================================== -->
+<div class="modal-backdrop" *ngIf="isDeleteModalOpen()" (click)="closeDeleteModal()">
+  <div class="modal-dialog modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Delete User</h3>
+      <button class="btn-close" (click)="closeDeleteModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to permanently delete user <strong>{{ selectedUser()?.fullName }}</strong> ({{ selectedUser()?.email }})?</p>
+      <p class="text-danger-sm">This action removes all RBAC access immediately.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeDeleteModal()">Cancel</button>
+      <button type="button" class="btn-delete-confirm" (click)="executeDelete()" [disabled]="isLoading()">
+        {{ isLoading() ? 'Deleting...' : 'Delete User' }}
+      </button>
+    </div>
+  </div>
+</div>

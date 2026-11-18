@@ -1,0 +1,39 @@
+# Git Ignore for e-comm
+
+# Maven & Java
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE & Editors
+.idea/
+*.iml
+.vscode/
+*.suo
+*.user
+.project
+.classpath
+.settings/
+
+# Node & Frontend
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment & OS
+.env
+!.env.example
+.DS_Store
+Thumbs.db
+*.log
+
+# Docker Volumes
+data/
+docker-volumes/

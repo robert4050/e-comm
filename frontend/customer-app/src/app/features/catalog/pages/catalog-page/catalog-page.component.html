@@ -1,0 +1,94 @@
+<!-- Dynamic Auto-Sliding Hero Carousel -->
+<section 
+  class="hero-carousel-container" 
+  (mouseenter)="pauseAutoplay()" 
+  (mouseleave)="resumeAutoplay()">
+
+  <!-- Slides Track -->
+  <div class="hero-slides">
+    <div 
+      class="hero-slide" 
+      *ngFor="let slide of heroSlides; let i = index" 
+      [class.active]="i === currentSlide"
+      [style.background-image]="'url(' + slide.image + ')'">
+
+      <div class="hero-overlay">
+        <div class="hero-inner">
+          <h1 class="hero-title">{{ slide.title }}</h1>
+          <p class="hero-subtitle">{{ slide.subtitle }}</p>
+
+          <div class="hero-actions">
+            <button class="btn-hero-primary" (click)="onHeroCta(slide.category)">
+              <span>{{ slide.ctaText }}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+            <button class="btn-hero-secondary" (click)="onHeroCta('All')">
+              Browse All Catalog
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow Navigation Controls -->
+  <button class="carousel-arrow arrow-prev" (click)="prevSlide()" title="Previous Slide">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+  </button>
+
+  <button class="carousel-arrow arrow-next" (click)="nextSlide()" title="Next Slide">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </button>
+
+  <!-- Carousel Pagination Indicators -->
+  <div class="carousel-indicators">
+    <button 
+      *ngFor="let s of heroSlides; let idx = index" 
+      class="indicator-dot" 
+      [class.active]="idx === currentSlide"
+      (click)="goToSlide(idx)"
+      [title]="'Go to slide ' + (idx + 1)">
+    </button>
+  </div>
+</section>
+
+<!-- Category Filter Bar -->
+<section class="category-section" id="catalog-section">
+  <div class="category-pills">
+    <button 
+      *ngFor="let cat of categories" 
+      [class.active]="selectedCategory === cat" 
+      (click)="onCategorySelect(cat)"
+      class="cat-btn">
+      {{ cat }}
+    </button>
+  </div>
+</section>
+
+<!-- Product Catalog Grid -->
+<main class="catalog-main">
+  <div class="catalog-header">
+    <h3>Available Catalog Products</h3>
+    <span class="catalog-count">{{ products.length }} items</span>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading products from API Gateway...</p>
+  </div>
+
+  <div class="products-grid" *ngIf="!loading">
+    <app-product-card 
+      *ngFor="let product of products" 
+      [product]="product"
+      (addToCartClicked)="onAddToCart($event)">
+    </app-product-card>
+  </div>
+</main>

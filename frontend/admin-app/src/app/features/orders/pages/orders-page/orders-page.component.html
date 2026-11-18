@@ -1,0 +1,201 @@
+<div class="orders-page">
+  <!-- Top Banner -->
+  <div class="page-title-banner">
+    <div class="title-left">
+      <div class="title-icon-box">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1" y="3" width="15" height="13"></rect>
+          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+          <circle cx="5.5" cy="18.5" r="2.5"></circle>
+          <circle cx="18.5" cy="18.5" r="2.5"></circle>
+        </svg>
+      </div>
+      <div class="title-text">
+        <h2>Orders & Fulfilment Operations</h2>
+        <p>Monitor Razorpay payments, confirm incoming customer purchases, and coordinate warehouse dispatch.</p>
+      </div>
+    </div>
+
+    <!-- Actions & Filter Buttons -->
+    <div class="banner-actions">
+      <button class="btn-refresh" (click)="refreshOrders()" title="Refresh live orders from database">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Refresh
+      </button>
+
+      <div class="filter-group">
+        <button class="btn-filter" [class.active]="selectedFilter === 'ALL'" (click)="selectedFilter = 'ALL'">
+          All ({{ orders.length }})
+        </button>
+        <button class="btn-filter btn-filter-processing" [class.active]="selectedFilter === 'PROCESSING'" (click)="selectedFilter = 'PROCESSING'">
+          Awaiting Confirmation ({{ processingCount }})
+        </button>
+        <button class="btn-filter" [class.active]="selectedFilter === 'CONFIRMED'" (click)="selectedFilter = 'CONFIRMED'">
+          Confirmed ({{ confirmedCount }})
+        </button>
+        <button class="btn-filter" [class.active]="selectedFilter === 'SHIPPED'" (click)="selectedFilter = 'SHIPPED'">
+          Shipped ({{ shippedCount }})
+        </button>
+        <button class="btn-filter" [class.active]="selectedFilter === 'DELIVERED'" (click)="selectedFilter = 'DELIVERED'">
+          Delivered ({{ deliveredCount }})
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metric Overview -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <span class="metric-label">Total Store Orders</span>
+      <div class="metric-val">{{ orders.length }} Orders</div>
+      <span class="metric-sub text-green">100% Saga Synchronized</span>
+    </div>
+    <div class="metric-card highlight-metric" *ngIf="processingCount > 0">
+      <span class="metric-label">Pending Admin Confirmation</span>
+      <div class="metric-val text-amber">{{ processingCount }} Orders</div>
+      <span class="metric-sub text-amber font-semibold">Action Required in Fulfilment</span>
+    </div>
+    <div class="metric-card" *ngIf="processingCount === 0">
+      <span class="metric-label">Fulfilment Queue</span>
+      <div class="metric-val text-green">All Confirmed ✓</div>
+      <span class="metric-sub">No pending confirmation</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">Confirmed & Shipped</span>
+      <div class="metric-val">{{ confirmedCount + shippedCount + deliveredCount }} Orders</div>
+      <span class="metric-sub text-blue">In logistics pipeline</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">Gross Order Volume</span>
+      <div class="metric-val">${{ totalGrossVolume | number:'1.2-2' }}</div>
+      <span class="metric-sub text-razorpay font-semibold">100% Razorpay Secure</span>
+    </div>
+  </div>
+
+  <!-- Orders Data Table Card -->
+  <div class="dashboard-card">
+    <div class="card-header">
+      <div class="card-title-wrap">
+        <h3>Live Customer Orders</h3>
+        <span class="badge-count">{{ filteredOrders.length }} showing</span>
+      </div>
+    </div>
+    <div class="card-body no-padding table-responsive">
+      <table class="architect-table">
+        <thead>
+          <tr>
+            <th>Order Ref</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th>Total Amount</th>
+            <th>Payment Method</th>
+            <th>Fulfilment Status</th>
+            <th>Courier / Handoff</th>
+            <th>Placed At</th>
+            <th class="text-center">Admin Fulfilment Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let o of filteredOrders" [class.row-highlight]="o.fulfilmentStatus === 'PROCESSING'">
+            <td>
+              <strong class="order-ref">{{ o.orderNumber }}</strong>
+            </td>
+            <td>
+              <div class="cust-info">
+                <strong>{{ o.customerName }}</strong>
+                <small>{{ o.customerEmail }}</small>
+              </div>
+            </td>
+            <td><span class="sku-badge">{{ o.itemsCount }} Items</span></td>
+            <td><strong class="order-price">${{ o.totalPrice | number:'1.2-2' }}</strong></td>
+            <td>
+              <div class="payment-cell">
+                <span class="badge-razorpay">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                    <polyline points="2 17 12 22 22 17"></polyline>
+                    <polyline points="2 12 12 17 22 12"></polyline>
+                  </svg>
+                  Razorpay (Paid)
+                </span>
+                <span class="pay-id" *ngIf="o.razorpayPaymentId" [title]="o.razorpayPaymentId">
+                  {{ o.razorpayPaymentId }}
+                </span>
+              </div>
+            </td>
+            <td>
+              <span class="status-pill" 
+                [class.badge-processing]="o.fulfilmentStatus === 'PROCESSING'"
+                [class.badge-confirmed]="o.fulfilmentStatus === 'CONFIRMED'"
+                [class.badge-shipped]="o.fulfilmentStatus === 'SHIPPED'"
+                [class.badge-delivered]="o.fulfilmentStatus === 'DELIVERED'"
+                [class.badge-cancelled]="o.fulfilmentStatus === 'CANCELLED'">
+                <span class="dot-indicator"></span>
+                {{ o.fulfilmentStatus }}
+              </span>
+            </td>
+            <td>
+              <div class="carrier-cell">
+                <span>{{ o.carrier }}</span>
+                <code>{{ o.trackingNumber }}</code>
+                <span *ngIf="o.deliveryOtp" class="twilio-otp-tag" title="Dispatched via Twilio SMS">
+                  Twilio OTP: <strong>{{ o.deliveryOtp }}</strong>
+                </span>
+              </div>
+            </td>
+            <td><span class="date-text">{{ o.createdAt }}</span></td>
+            <td class="text-center action-cell">
+              <!-- If PROCESSING: Show prominent green Confirm Order button -->
+              <button 
+                *ngIf="o.fulfilmentStatus === 'PROCESSING'" 
+                class="btn-action-confirm" 
+                (click)="confirmOrder(o)"
+                title="Confirm order from admin side to authorize warehouse dispatch">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Confirm Order
+              </button>
+
+              <!-- If CONFIRMED: Admin can mark Shipped -->
+              <button 
+                *ngIf="o.fulfilmentStatus === 'CONFIRMED'" 
+                class="btn-action-ship" 
+                (click)="cycleStatus(o)"
+                title="Mark order as dispatched/shipped and trigger Twilio SMS OTP">
+                Ship Package &rarr;
+              </button>
+
+              <!-- If SHIPPED: Awaiting Customer OTP verification or Admin override -->
+              <div *ngIf="o.fulfilmentStatus === 'SHIPPED'" class="shipped-admin-action">
+                <span class="badge-awaiting-otp" title="Awaiting Customer Twilio OTP Verification">
+                  ⏳ Awaiting Customer OTP
+                </span>
+                <button 
+                  class="btn-action-override" 
+                  (click)="cycleStatus(o)"
+                  title="Admin manual delivery override">
+                  Override ✓
+                </button>
+              </div>
+
+              <!-- If DELIVERED -->
+              <span *ngIf="o.fulfilmentStatus === 'DELIVERED'" class="status-done-pill">
+                ✓ Delivered (Verified)
+              </span>
+
+              <!-- If CANCELLED -->
+              <span *ngIf="o.fulfilmentStatus === 'CANCELLED'" class="status-cancelled-pill">
+                Cancelled
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

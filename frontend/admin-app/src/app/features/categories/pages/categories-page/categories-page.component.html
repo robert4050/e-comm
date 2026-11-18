@@ -1,0 +1,181 @@
+<div class="categories-page">
+  <!-- Top Banner -->
+  <div class="page-title-banner">
+    <div class="title-left">
+      <div class="title-icon-box">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+          <line x1="7" y1="7" x2="7.01" y2="7"></line>
+        </svg>
+      </div>
+      <div class="title-text">
+        <h2>Categories & Brands</h2>
+        <p>Manage product taxonomy categories and brand options available when adding or editing products.</p>
+      </div>
+    </div>
+    <div class="title-actions">
+      <button class="btn-create-new" (click)="openCatModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>+ Add Category</span>
+      </button>
+
+      <button class="btn-create-brand" (click)="openBrandModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>+ Add Brand</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Categories Table Card -->
+  <div class="dashboard-card">
+    <div class="card-header">
+      <div class="header-left-title">
+        <h3>Store Categories ({{ categories().length }})</h3>
+        <span class="header-desc">Categories selectable during product creation</span>
+      </div>
+      <button class="btn-sm-action" (click)="openCatModal()">+ New Category</button>
+    </div>
+    <div class="card-body no-padding">
+      <div class="table-responsive">
+        <table class="architect-table">
+          <thead>
+            <tr>
+              <th>Category Name</th>
+              <th>URL Slug</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of categories()">
+              <td><strong>{{ c.name }}</strong></td>
+              <td><code>/catalog/{{ c.slug }}</code></td>
+              <td><span class="desc-text">{{ c.description }}</span></td>
+              <td><span class="status-pill badge-success">{{ c.status }}</span></td>
+              <td class="text-center">
+                <button class="btn-action-delete" (click)="deleteCategory(c)" title="Delete Category">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  <span>Delete</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Partner Brands Table Card -->
+  <div class="dashboard-card">
+    <div class="card-header">
+      <div class="header-left-title">
+        <h3>Store Brands ({{ brands().length }})</h3>
+        <span class="header-desc">Brands selectable in the product creation Brand dropdown</span>
+      </div>
+      <button class="btn-sm-action btn-brand-color" (click)="openBrandModal()">+ New Brand</button>
+    </div>
+    <div class="card-body no-padding">
+      <div class="table-responsive">
+        <table class="architect-table">
+          <thead>
+            <tr>
+              <th>Brand Name</th>
+              <th>Headquarters / Origin</th>
+              <th>Partnership Tier</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let b of brands()">
+              <td>
+                <div class="brand-cell">
+                  <span class="brand-name"><strong>{{ b.name }}</strong></span>
+                </div>
+              </td>
+              <td><span class="origin-text">{{ b.origin }}</span></td>
+              <td>
+                <span class="status-pill" [class.badge-primary]="b.status === 'FEATURED'" [class.badge-secondary]="b.status === 'PARTNER'">
+                  {{ b.status }}
+                </span>
+              </td>
+              <td class="text-center">
+                <button class="btn-action-delete" (click)="deleteBrand(b)" title="Delete Brand">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  <span>Delete</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 1: Add Category -->
+<div class="modal-backdrop" *ngIf="isCatModalOpen">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Add New Store Category</h3>
+      <button class="close-btn" (click)="closeCatModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Category Name</label>
+        <input type="text" [(ngModel)]="newCatName" placeholder="e.g. Smart Home & IoT" />
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea [(ngModel)]="newCatDesc" rows="3" placeholder="Category purpose and product scope..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" (click)="closeCatModal()">Cancel</button>
+      <button class="btn-primary" (click)="saveCategory()">Save Category</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 2: Add Brand -->
+<div class="modal-backdrop" *ngIf="isBrandModalOpen">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Add New Store Brand</h3>
+      <button class="close-btn" (click)="closeBrandModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Brand Name</label>
+        <input type="text" [(ngModel)]="newBrandName" placeholder="e.g. Asus, LG, Ninja, GoPro" />
+      </div>
+      <div class="form-group">
+        <label>Headquarters / Origin (Optional)</label>
+        <input type="text" [(ngModel)]="newBrandOrigin" placeholder="e.g. Taipei, Taiwan or San Mateo, CA" />
+      </div>
+      <div class="form-group">
+        <label>Partnership Tier</label>
+        <select [(ngModel)]="newBrandStatus">
+          <option value="PARTNER">PARTNER</option>
+          <option value="FEATURED">FEATURED</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" (click)="closeBrandModal()">Cancel</button>
+      <button class="btn-brand-submit" (click)="saveBrand()">Save Brand</button>
+    </div>
+  </div>
+</div>

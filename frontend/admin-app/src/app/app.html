@@ -1,0 +1,30 @@
+<!-- Toast Notifications Container -->
+<div class="toast-container" *ngIf="notificationService.messages().length > 0">
+  <div 
+    class="toast" 
+    *ngFor="let msg of notificationService.messages()"
+    [ngClass]="'toast-' + msg.type">
+    <span>{{ msg.text }}</span>
+    <button class="toast-close" (click)="notificationService.dismiss(msg.id)">×</button>
+  </div>
+</div>
+
+<!-- Standalone Full-Page Login View -->
+<div *ngIf="isLoginPage" class="login-page-view">
+  <router-outlet></router-outlet>
+</div>
+
+<!-- Standard ArchitectUI Admin Layout -->
+<div *ngIf="!isLoginPage" class="architect-layout">
+  <!-- Left Navigation Sidebar -->
+  <app-sidebar></app-sidebar>
+
+  <!-- Main View Area (Header + Content) -->
+  <div class="architect-main">
+    <app-header></app-header>
+    
+    <main class="architect-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

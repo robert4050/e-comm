@@ -1,0 +1,122 @@
+<div class="sagas-page">
+  <!-- Top Banner -->
+  <div class="page-title-banner">
+    <div class="title-left">
+      <div class="title-icon-box">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+          <line x1="1" y1="10" x2="23" y2="10"></line>
+        </svg>
+      </div>
+      <div class="title-text">
+        <h2>Distributed Saga Orchestrator</h2>
+        <p>Real-time distributed transaction tracking, compensation state, and Kafka event dispatch.</p>
+      </div>
+    </div>
+    <div class="title-actions">
+      <button class="btn-create-new" (click)="simulateSaga()" [disabled]="isSimulating">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        <span>{{ isSimulating ? 'Executing Saga...' : 'Run Test Saga' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Real-time Saga Execution Stepper (Visible during simulation or inspecting) -->
+  <div class="dashboard-card stepper-card">
+    <div class="card-header">
+      <h3>Distributed Multi-Service Saga Pipeline</h3>
+    </div>
+    <div class="card-body">
+      <div class="saga-stepper">
+        <div class="step-node" [class.done]="activeSimulationStep >= 1 || (!isSimulating && true)">
+          <div class="step-circle">1</div>
+          <div class="step-label">
+            <strong>Checkout Session</strong>
+            <small>Durable Saga State</small>
+          </div>
+        </div>
+
+        <div class="step-divider" [class.done]="activeSimulationStep >= 2 || (!isSimulating && true)"></div>
+
+        <div class="step-node" [class.done]="activeSimulationStep >= 2 || (!isSimulating && true)">
+          <div class="step-circle">2</div>
+          <div class="step-label">
+            <strong>Validate Pricing</strong>
+            <small>Discounts & Taxes</small>
+          </div>
+        </div>
+
+        <div class="step-divider" [class.done]="activeSimulationStep >= 3 || (!isSimulating && true)"></div>
+
+        <div class="step-node" [class.done]="activeSimulationStep >= 3 || (!isSimulating && true)">
+          <div class="step-circle">3</div>
+          <div class="step-label">
+            <strong>Lock Inventory</strong>
+            <small>Redis 15m TTL</small>
+          </div>
+        </div>
+
+        <div class="step-divider" [class.done]="activeSimulationStep >= 4 || (!isSimulating && true)"></div>
+
+        <div class="step-node" [class.done]="activeSimulationStep >= 4 || (!isSimulating && true)">
+          <div class="step-circle">4</div>
+          <div class="step-label">
+            <strong>Capture Payment</strong>
+            <small>Stripe / Clerk Token</small>
+          </div>
+        </div>
+
+        <div class="step-divider" [class.done]="activeSimulationStep >= 5 || (!isSimulating && true)"></div>
+
+        <div class="step-node" [class.done]="activeSimulationStep >= 5 || (!isSimulating && true)">
+          <div class="step-circle">5</div>
+          <div class="step-label">
+            <strong>Kafka Dispatch</strong>
+            <small>order.events.v1</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sagas Data Table Card -->
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3>Recent Distributed Saga Transactions</h3>
+    </div>
+    <div class="card-body no-padding">
+      <table class="architect-table">
+        <thead>
+          <tr>
+            <th>Saga Execution ID</th>
+            <th>Order Ref</th>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>Pipeline Completion</th>
+            <th>Latency</th>
+            <th>Saga State</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of sagas">
+            <td><code>{{ s.sagaId }}</code></td>
+            <td><strong>{{ s.orderNumber }}</strong></td>
+            <td>{{ s.customer }}</td>
+            <td><strong>${{ s.amount | number:'1.2-2' }}</strong></td>
+            <td><span class="step-badge">{{ s.currentStep }}</span></td>
+            <td><span class="latency-text">{{ s.durationMs }}ms</span></td>
+            <td>
+              <span class="status-pill" [class.badge-success]="s.status === 'COMPLETED'" [class.badge-danger]="s.status === 'COMPENSATED'">
+                {{ s.status }}
+              </span>
+            </td>
+            <td><span class="date-text">{{ s.timestamp }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

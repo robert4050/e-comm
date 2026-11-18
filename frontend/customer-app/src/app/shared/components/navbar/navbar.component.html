@@ -1,0 +1,89 @@
+<header class="header">
+  <div class="nav-content">
+    <a routerLink="/catalog" class="brand brand-link">
+      <div class="brand-logo-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <path d="M16 10a4 4 0 0 1-8 0"></path>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>e-comm</h1>
+        <span class="brand-sub">Storefront</span>
+      </div>
+    </a>
+
+    <!-- Navigation Links -->
+    <nav class="nav-links">
+      <a routerLink="/catalog" routerLinkActive="active" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span>Shop Catalog</span>
+      </a>
+
+      <a routerLink="/my-orders" routerLinkActive="active" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1" y="3" width="15" height="13"></rect>
+          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+          <circle cx="5.5" cy="18.5" r="2.5"></circle>
+          <circle cx="18.5" cy="18.5" r="2.5"></circle>
+        </svg>
+        <span>My Orders</span>
+      </a>
+    </nav>
+
+    <!-- Search Bar -->
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Search products, brands, tech specs..." 
+        [(ngModel)]="searchQuery"
+        (keyup.enter)="onSearch()"
+      />
+      <button class="search-btn" (click)="onSearch()">Search</button>
+    </div>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+      <!-- Clerk & Google Auth Box -->
+      <div class="auth-box">
+        <span class="user-badge" *ngIf="authService.currentUser()">
+          <img *ngIf="authService.currentUser()?.avatarUrl" [src]="authService.currentUser()?.avatarUrl" class="user-avatar-img" alt="Avatar" />
+          <svg *ngIf="!authService.currentUser()?.avatarUrl" class="user-avatar-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span class="user-name">{{ authService.currentUser()?.username }}</span>
+        </span>
+        <button class="btn btn-outline" *ngIf="!authService.currentUser()" (click)="openSignIn()">
+          Sign In
+        </button>
+        <button class="btn btn-primary" *ngIf="!authService.currentUser()" (click)="openSignUp()">
+          Sign Up
+        </button>
+        <button class="btn btn-outline btn-sm" *ngIf="authService.currentUser()" (click)="authService.logout()">
+          Sign Out
+        </button>
+      </div>
+
+      <!-- Cart Button -->
+      <button class="cart-btn" (click)="toggleCart()" title="View your shopping cart">
+        <svg class="cart-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <span class="cart-label">Cart</span>
+        <span class="cart-badge">{{ cartService.totalCount() }}</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Auth Modal (Sign In / Sign Up / Google Auth) -->
+<app-auth-modal></app-auth-modal>

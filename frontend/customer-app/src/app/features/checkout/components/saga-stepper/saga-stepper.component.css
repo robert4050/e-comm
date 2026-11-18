@@ -1,0 +1,551 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.checkout-modal {
+  background: #ffffff;
+  width: 100%;
+  max-width: 640px;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.modal-header {
+  padding: 1.25rem 1.75rem;
+  background: #0c2340;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.razorpay-logo-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #ffffff;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+}
+
+.rzp-text {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #0c2340;
+  letter-spacing: -0.3px;
+}
+
+.header-title-wrap h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  color: #ffffff;
+}
+
+.secure-badge {
+  font-size: 0.725rem;
+  color: #93c5fd;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.15rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #ffffff;
+}
+
+/* Modal Body */
+.modal-body {
+  padding: 1.75rem;
+  max-height: 82vh;
+  overflow-y: auto;
+}
+
+.checkout-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 1rem 0;
+}
+
+.delivery-section, .summary-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.form-group label {
+  font-size: 0.775rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.form-group input, .form-group textarea, .form-group select {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  outline: none;
+  background: #ffffff;
+  color: #1e293b;
+}
+
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+/* Razorpay Sole Method Card */
+.razorpay-method-card {
+  background: #f0f7ff;
+  border: 2px solid #2563eb;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.method-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.radio-indicator {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #2563eb;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.radio-indicator.active::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2563eb;
+}
+
+.method-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.method-info strong {
+  color: #0c2340;
+  font-size: 0.95rem;
+}
+
+.method-badge {
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.675rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.method-desc {
+  font-size: 0.775rem;
+  color: #475569;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.payment-channels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.channel-pill {
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  font-size: 0.725rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* Bill Summary */
+.order-bill {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.bill-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.text-free {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.total-row {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.btn-pay-razorpay {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 0.85rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  transition: all 0.15s ease;
+}
+
+.btn-pay-razorpay:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+/* Phase 2: Razorpay Sheet */
+.razorpay-sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.rzp-sheet-header {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rzp-merchant-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.merchant-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.order-desc {
+  font-size: 0.775rem;
+  color: #64748b;
+}
+
+.rzp-amount-badge {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.rzp-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.rzp-tab {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 0.65rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: all 0.15s ease;
+}
+
+.rzp-tab.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.rzp-channel-content {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.upi-apps-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.upi-app-pill {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 0.3rem 0.65rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.rzp-action-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-cancel-rzp {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 0.75rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-confirm-rzp {
+  flex: 1;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-confirm-rzp:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.btn-confirm-rzp:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.rzp-security-note {
+  font-size: 0.75rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+/* Phase 3: Success Screen */
+.success-screen {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.success-icon-box {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #dcfce7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.success-screen h3 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.success-sub {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.order-details-card {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  text-align: left;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.detail-row strong {
+  color: #0f172a;
+}
+
+.rzp-pay-id {
+  font-family: monospace;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.status-highlight-row {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.65rem;
+  margin-top: 0.25rem;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.badge-processing {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.admin-confirmation-banner {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  text-align: left;
+}
+
+.banner-icon {
+  margin-top: 0.15rem;
+}
+
+.banner-text strong {
+  color: #1e3a8a;
+  font-size: 0.875rem;
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.banner-text p {
+  color: #3b82f6;
+  font-size: 0.8rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.banner-text code {
+  background: #ffffff;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
+.btn-primary-continue {
+  background: #0f172a;
+  color: #ffffff;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-primary-continue:hover {
+  background: #1e293b;
+}

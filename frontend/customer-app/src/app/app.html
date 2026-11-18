@@ -1,0 +1,30 @@
+<div class="app-container">
+  <!-- Notifications Toast Container -->
+  <div class="toast-container" *ngIf="notificationService.messages().length > 0">
+    <div 
+      class="toast" 
+      *ngFor="let msg of notificationService.messages()"
+      [ngClass]="'toast-' + msg.type">
+      <span>{{ msg.text }}</span>
+      <button class="toast-close" (click)="notificationService.dismiss(msg.id)">×</button>
+    </div>
+  </div>
+
+  <!-- Shared Navbar -->
+  <app-navbar (cartToggled)="onCartToggle()"></app-navbar>
+
+  <!-- Routed Feature View (Lazy Loaded) -->
+  <router-outlet></router-outlet>
+
+  <!-- Slide-out Cart Drawer -->
+  <app-cart-drawer (checkoutStarted)="startCheckout()"></app-cart-drawer>
+
+  <!-- Razorpay Checkout Modal -->
+  <app-saga-stepper 
+    [isOpen]="isCheckoutOpen" 
+    (modalClosed)="closeCheckout()">
+  </app-saga-stepper>
+
+  <!-- Shared Footer -->
+  <app-footer></app-footer>
+</div>

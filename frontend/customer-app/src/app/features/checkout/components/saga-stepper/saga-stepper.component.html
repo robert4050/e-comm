@@ -1,0 +1,266 @@
+<div class="modal-backdrop" *ngIf="isOpen">
+  <div class="checkout-modal">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <div class="header-brand">
+        <div class="razorpay-logo-badge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M2.5 12L12 2.5L21.5 12L12 21.5L2.5 12Z" fill="#0c2340"/>
+            <path d="M7 12L12 7L17 12L12 17L7 12Z" fill="#3395ff"/>
+          </svg>
+          <span class="rzp-text">Razorpay</span>
+        </div>
+        <div class="header-title-wrap">
+          <h3>Secure Checkout</h3>
+          <span class="secure-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            256-Bit SSL Encrypted
+          </span>
+        </div>
+      </div>
+      <button class="close-btn" (click)="close()">×</button>
+    </div>
+
+    <!-- Phase 1: Contact, Delivery & Razorpay Payment Selection -->
+    <div class="modal-body" *ngIf="checkoutState === 'DETAILS'">
+      <div class="checkout-layout">
+        <!-- Left: Delivery Details -->
+        <div class="delivery-section">
+          <h4 class="section-title">1. Shipping & Customer Details</h4>
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" [(ngModel)]="customerName" placeholder="Your Full Name" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Email Address</label>
+              <input type="email" [(ngModel)]="customerEmail" placeholder="name@example.com" />
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="tel" [(ngModel)]="customerPhone" placeholder="+91 98765 43210" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Delivery Address</label>
+            <textarea rows="2" [(ngModel)]="shippingAddress" placeholder="Street address, city, state, postal code"></textarea>
+          </div>
+        </div>
+
+        <!-- Right: Order Summary & Razorpay ONLY Option -->
+        <div class="summary-section">
+          <h4 class="section-title">2. Payment Method</h4>
+          
+          <!-- Sole Payment Method: Razorpay -->
+          <div class="razorpay-method-card active">
+            <div class="method-header">
+              <div class="radio-indicator active"></div>
+              <div class="method-info">
+                <strong>Razorpay Secure Payment</strong>
+                <span class="method-badge">Sole Payment Method</span>
+              </div>
+            </div>
+            <p class="method-desc">
+              Fast, secure checkout with instant verification. Supports UPI, Debit & Credit Cards, and NetBanking.
+            </p>
+            <div class="payment-channels">
+              <span class="channel-pill upi">UPI / QR (GPay, PhonePe)</span>
+              <span class="channel-pill card">Visa / Mastercard / RuPay</span>
+              <span class="channel-pill netbanking">NetBanking (50+ Banks)</span>
+            </div>
+          </div>
+
+          <!-- Total Calculation -->
+          <div class="order-bill">
+            <div class="bill-row">
+              <span>Items ({{ itemsCount }})</span>
+              <span>{{ totalAmount | priceFormat }}</span>
+            </div>
+            <div class="bill-row">
+              <span>Delivery Fee</span>
+              <span class="text-free">FREE</span>
+            </div>
+            <div class="bill-row total-row">
+              <span>Amount to Pay</span>
+              <strong>{{ totalAmount | priceFormat }}</strong>
+            </div>
+          </div>
+
+          <button class="btn-pay-razorpay" (click)="openPaymentSheet()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#ffffff" stroke-width="2"/>
+            </svg>
+            <span>Proceed to Pay {{ totalAmount | priceFormat }} via Razorpay</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2: Razorpay Interactive Payment Sheet -->
+    <div class="modal-body razorpay-sheet-body" *ngIf="checkoutState === 'PAYING'">
+      <div class="rzp-sheet-header">
+        <div class="rzp-merchant-info">
+          <span class="merchant-name">e-comm Official Store</span>
+          <span class="order-desc">Order Payment • {{ itemsCount }} Items</span>
+        </div>
+        <div class="rzp-amount-badge">
+          {{ totalAmount | priceFormat }}
+        </div>
+      </div>
+
+      <!-- Payment Channels Navigation -->
+      <div class="rzp-tabs">
+        <button class="rzp-tab" [class.active]="selectedRazorpayTab === 'UPI'" (click)="selectedRazorpayTab = 'UPI'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+            <line x1="6" y1="12" x2="18" y2="12"></line>
+          </svg>
+          <span>UPI / QR</span>
+        </button>
+        <button class="rzp-tab" [class.active]="selectedRazorpayTab === 'CARD'" (click)="selectedRazorpayTab = 'CARD'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+            <line x1="1" y1="10" x2="23" y2="10"></line>
+          </svg>
+          <span>Cards</span>
+        </button>
+        <button class="rzp-tab" [class.active]="selectedRazorpayTab === 'NETBANKING'" (click)="selectedRazorpayTab = 'NETBANKING'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 21h18M3 10h18M5 10v11M19 10v11M9 10v11M14 10v11M12 2L2 7h20L12 2z"></path>
+          </svg>
+          <span>NetBanking</span>
+        </button>
+      </div>
+
+      <!-- Channel Details Form -->
+      <div class="rzp-channel-content">
+        <!-- UPI Tab -->
+        <div *ngIf="selectedRazorpayTab === 'UPI'" class="tab-pane">
+          <div class="form-group">
+            <label>Virtual Payment Address (UPI ID)</label>
+            <input type="text" [(ngModel)]="upiId" placeholder="username@upi" />
+          </div>
+          <div class="upi-apps-row">
+            <span class="upi-app-pill">Google Pay</span>
+            <span class="upi-app-pill">PhonePe</span>
+            <span class="upi-app-pill">Paytm</span>
+            <span class="upi-app-pill">BHIM</span>
+          </div>
+        </div>
+
+        <!-- Card Tab -->
+        <div *ngIf="selectedRazorpayTab === 'CARD'" class="tab-pane">
+          <div class="form-group">
+            <label>Card Number</label>
+            <input type="text" [(ngModel)]="cardNumber" placeholder="Card Number" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Expiry</label>
+              <input type="text" value="08/29" />
+            </div>
+            <div class="form-group">
+              <label>CVV</label>
+              <input type="password" value="•••" maxlength="3" />
+            </div>
+          </div>
+        </div>
+
+        <!-- NetBanking Tab -->
+        <div *ngIf="selectedRazorpayTab === 'NETBANKING'" class="tab-pane">
+          <div class="form-group">
+            <label>Select Bank</label>
+            <select [(ngModel)]="selectedBank">
+              <option value="HDFC Bank">HDFC Bank</option>
+              <option value="State Bank of India">State Bank of India</option>
+              <option value="ICICI Bank">ICICI Bank</option>
+              <option value="Axis Bank">Axis Bank</option>
+              <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="rzp-action-row">
+        <button class="btn-cancel-rzp" (click)="checkoutState = 'DETAILS'" [disabled]="isProcessingPayment">
+          Back
+        </button>
+        <button class="btn-confirm-rzp" (click)="processRazorpayPayment()" [disabled]="isProcessingPayment">
+          <span *ngIf="!isProcessingPayment">Pay {{ totalAmount | priceFormat }}</span>
+          <span *ngIf="isProcessingPayment" class="loading-spinner">Verifying with Razorpay...</span>
+        </button>
+      </div>
+
+      <div class="rzp-security-note">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>Secured by Razorpay. 100% Encrypted & Safe Transaction.</span>
+      </div>
+    </div>
+
+    <!-- Phase 3: Payment Success Screen -->
+    <div class="modal-body" *ngIf="checkoutState === 'SUCCESS' && placedOrder">
+      <div class="success-screen">
+        <div class="success-icon-box">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+
+        <h3>Payment Successful!</h3>
+        <p class="success-sub">Your payment has been captured and verified via Razorpay.</p>
+
+        <!-- Order Information Card -->
+        <div class="order-details-card">
+          <div class="detail-row">
+            <span>Order Reference:</span>
+            <strong>{{ placedOrder.orderNumber }}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Razorpay Payment ID:</span>
+            <code class="rzp-pay-id">{{ placedOrder.razorpayPaymentId }}</code>
+          </div>
+          <div class="detail-row">
+            <span>Amount Paid:</span>
+            <strong>{{ placedOrder.totalPrice | priceFormat }}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Customer:</span>
+            <span>{{ placedOrder.customerName }} ({{ placedOrder.customerEmail }})</span>
+          </div>
+          <div class="detail-row status-highlight-row">
+            <span>Order Status:</span>
+            <span class="status-pill badge-processing">
+              Order Confirmed (Processing)
+            </span>
+          </div>
+        </div>
+
+        <!-- Customer Confirmation Banner -->
+        <div class="admin-confirmation-banner">
+          <div class="banner-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div class="banner-text">
+            <strong>Order Placed Successfully</strong>
+            <p>
+              Thank you for your purchase! We have verified your payment via Razorpay. Our fulfillment team is now preparing your package for express courier dispatch.
+            </p>
+          </div>
+        </div>
+
+        <button class="btn-primary-continue" (click)="close()">
+          Continue Shopping
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,195 @@
+services:
+  # ----------------------------------------------------------------------------
+  # Infrastructure: MySQL 8 (Multi-database host for services)
+  # ----------------------------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: ecomm-mysql
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./infrastructure/mysql/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - ecomm-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ----------------------------------------------------------------------------
+  # Infrastructure: phpMyAdmin (Web Database GUI for MySQL)
+  # ----------------------------------------------------------------------------
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: ecomm-phpmyadmin
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${PHPMYADMIN_PORT:-8085}:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - ecomm-network
+
+  # ----------------------------------------------------------------------------
+  # Infrastructure: Apache Kafka (Single-Node KRaft Mode)
+  # ----------------------------------------------------------------------------
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: ecomm-kafka
+    restart: unless-stopped
+    user: "0:0"
+    env_file:
+      - .env
+    ports:
+      - "${KAFKA_HOST_PORT:-9092}:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - ecomm-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 25s
+
+  # ----------------------------------------------------------------------------
+  # Infrastructure: Redis (Cache & Ephemeral Session Store)
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: ecomm-redis
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ecomm-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # Infrastructure: Elasticsearch (Search & Vector Engine)
+  # ----------------------------------------------------------------------------
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: ecomm-elasticsearch
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - ecomm-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cat/health | grep -q green || grep -q yellow"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ----------------------------------------------------------------------------
+  # Backend: Spring Cloud API Gateway (Routing, Security & Rate Limiting)
+  # ----------------------------------------------------------------------------
+  api-gateway:
+    build:
+      context: ./backend
+      dockerfile: api-gateway/Dockerfile
+    container_name: ecomm-api-gateway
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    depends_on:
+      product-service:
+        condition: service_started
+    networks:
+      - ecomm-network
+
+  # ----------------------------------------------------------------------------
+  # Backend: Product Microservice (Catalog & Products)
+  # ----------------------------------------------------------------------------
+  product-service:
+    build:
+      context: ./backend
+      dockerfile: product-service/Dockerfile
+    container_name: ecomm-product-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - ecomm-network
+
+  # ----------------------------------------------------------------------------
+  # Frontend: Customer Portal Angular App
+  # ----------------------------------------------------------------------------
+  customer-app:
+    build:
+      context: ./frontend/customer-app
+      dockerfile: Dockerfile
+    container_name: ecomm-customer-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${CUSTOMER_APP_PORT:-4200}:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - ecomm-network
+
+  # ----------------------------------------------------------------------------
+  # Frontend: Admin Portal Angular App
+  # ----------------------------------------------------------------------------
+  admin-app:
+    build:
+      context: ./frontend/admin-app
+      dockerfile: Dockerfile
+    container_name: ecomm-admin-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${ADMIN_APP_PORT:-4201}:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - ecomm-network
+
+networks:
+  ecomm-network:
+    name: ecomm-network
+    driver: bridge
+
+volumes:
+  mysql_data:
+    name: ecomm_mysql_data
+  kafka_data:
+    name: ecomm_kafka_data
+  redis_data:
+    name: ecomm_redis_data
+  elasticsearch_data:
+    name: ecomm_elasticsearch_data

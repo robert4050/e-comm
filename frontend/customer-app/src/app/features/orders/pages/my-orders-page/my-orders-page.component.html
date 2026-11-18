@@ -1,0 +1,288 @@
+<div class="my-orders-page">
+  <div class="orders-container">
+    
+    <!-- Top Header Banner -->
+    <div class="orders-header-banner">
+      <div class="banner-text">
+        <h2>My Orders & Delivery Tracking</h2>
+        <p>Monitor package dispatch, view Razorpay transaction details, and verify delivery handover via Twilio OTP.</p>
+      </div>
+
+      <!-- Quick Action & Stats -->
+      <div class="banner-right">
+        <button class="btn-refresh" (click)="loadOrders()" title="Refresh live orders">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          Refresh
+        </button>
+
+        <a routerLink="/catalog" class="btn-shop-more">
+          &larr; Continue Shopping
+        </a>
+      </div>
+    </div>
+
+    <!-- Guest Sign-in Prompt if Not Logged In -->
+    <div class="guest-auth-alert" *ngIf="!authService.currentUser()">
+      <div class="alert-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <div class="alert-content">
+        <h4>Sign In to View Your Account Orders</h4>
+        <p>Log in with your customer account to view complete order history, courier tracking, and Twilio OTP delivery verifications.</p>
+      </div>
+      <button class="btn-alert-signin" (click)="openSignIn()">
+        Sign In Now
+      </button>
+    </div>
+
+    <!-- Filter Tabs Bar -->
+    <div class="filter-tabs-bar">
+      <div class="tabs-group">
+        <button class="tab-btn" [class.active]="selectedFilter === 'ALL'" (click)="selectedFilter = 'ALL'">
+          All Orders ({{ orders.length }})
+        </button>
+        <button class="tab-btn" [class.active]="selectedFilter === 'ACTIVE'" (click)="selectedFilter = 'ACTIVE'">
+          Active & In-Transit ({{ activeOrdersCount }})
+        </button>
+        <button class="tab-btn" [class.active]="selectedFilter === 'DELIVERED'" (click)="selectedFilter = 'DELIVERED'">
+          Delivered ({{ deliveredOrdersCount }})
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="isLoading">
+      <div class="spinner"></div>
+      <p>Loading your orders and delivery tracking...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-orders-card" *ngIf="!isLoading && filteredOrders.length === 0">
+      <div class="empty-icon-box">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1" y="3" width="15" height="13"></rect>
+          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+          <circle cx="5.5" cy="18.5" r="2.5"></circle>
+          <circle cx="18.5" cy="18.5" r="2.5"></circle>
+        </svg>
+      </div>
+      <h3>No Orders Found</h3>
+      <p>You haven't placed any orders matching this filter yet.</p>
+      <a routerLink="/catalog" class="btn-start-shopping">Start Shopping</a>
+    </div>
+
+    <!-- Orders Cards List -->
+    <div class="orders-list" *ngIf="!isLoading && filteredOrders.length > 0">
+      <div class="order-card" *ngFor="let o of filteredOrders">
+        
+        <!-- Order Header -->
+        <div class="order-card-header">
+          <div class="header-main-info">
+            <span class="order-badge-ref">{{ o.orderNumber }}</span>
+            <span class="order-date">{{ o.createdAt }}</span>
+          </div>
+
+          <div class="header-meta-info">
+            <div class="razorpay-paid-tag">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                <polyline points="2 17 12 22 22 17"></polyline>
+                <polyline points="2 12 12 17 22 12"></polyline>
+              </svg>
+              <span>Razorpay Verified</span>
+              <small *ngIf="o.razorpayPaymentId">({{ o.razorpayPaymentId }})</small>
+            </div>
+
+            <div class="order-total-price">
+              <span>Total:</span>
+              <strong>{{ o.totalPrice | priceFormat }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order Body: Customer & Tracking Details -->
+        <div class="order-card-body">
+          <div class="order-summary-grid">
+            <div class="info-block">
+              <span class="label">Recipient Customer</span>
+              <strong class="val">{{ o.customerName }}</strong>
+              <span class="sub">{{ o.customerEmail }}</span>
+            </div>
+
+            <div class="info-block">
+              <span class="label">Registered Phone (Twilio)</span>
+              <strong class="val">{{ o.customerPhone || '+91 98765 43210' }}</strong>
+              <span class="sub">SMS OTP recipient</span>
+            </div>
+
+            <div class="info-block">
+              <span class="label">Courier Carrier</span>
+              <strong class="val">{{ o.carrier }}</strong>
+              <code class="tracking-code">{{ o.trackingNumber }}</code>
+            </div>
+
+            <div class="info-block">
+              <span class="label">Current Status</span>
+              <span class="status-chip"
+                [class.chip-processing]="o.fulfilmentStatus === 'PROCESSING'"
+                [class.chip-confirmed]="o.fulfilmentStatus === 'CONFIRMED'"
+                [class.chip-shipped]="o.fulfilmentStatus === 'SHIPPED'"
+                [class.chip-delivered]="o.fulfilmentStatus === 'DELIVERED'"
+                [class.chip-cancelled]="o.fulfilmentStatus === 'CANCELLED'">
+                {{ o.fulfilmentStatus }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Progress Stepper Track -->
+          <div class="delivery-progress-track">
+            <div class="step-point" [class.completed]="true">
+              <div class="dot">✓</div>
+              <span class="title">Placed</span>
+            </div>
+            <div class="step-connector" [class.filled]="o.fulfilmentStatus !== 'PROCESSING'"></div>
+
+            <div class="step-point" [class.completed]="o.fulfilmentStatus === 'CONFIRMED' || o.fulfilmentStatus === 'SHIPPED' || o.fulfilmentStatus === 'DELIVERED'">
+              <div class="dot">{{ (o.fulfilmentStatus !== 'PROCESSING') ? '✓' : '2' }}</div>
+              <span class="title">Confirmed</span>
+            </div>
+            <div class="step-connector" [class.filled]="o.fulfilmentStatus === 'SHIPPED' || o.fulfilmentStatus === 'DELIVERED'"></div>
+
+            <div class="step-point" [class.completed]="o.fulfilmentStatus === 'SHIPPED' || o.fulfilmentStatus === 'DELIVERED'" [class.pulse]="o.fulfilmentStatus === 'SHIPPED'">
+              <div class="dot">{{ (o.fulfilmentStatus === 'DELIVERED') ? '✓' : '3' }}</div>
+              <span class="title">Out for Delivery</span>
+            </div>
+            <div class="step-connector" [class.filled]="o.fulfilmentStatus === 'DELIVERED'"></div>
+
+            <div class="step-point" [class.completed]="o.fulfilmentStatus === 'DELIVERED'">
+              <div class="dot">{{ (o.fulfilmentStatus === 'DELIVERED') ? '✓' : '4' }}</div>
+              <span class="title">Delivered</span>
+            </div>
+          </div>
+
+          <!-- REAL-WORLD DELIVERY OTP VERIFICATION BOX -->
+          
+          <!-- Case 1: SHIPPED - Active OTP verification required -->
+          <div class="otp-verification-card" *ngIf="o.fulfilmentStatus === 'SHIPPED'">
+            <div class="otp-card-header">
+              <div class="otp-header-left">
+                <div class="delivery-truck-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="1" y="3" width="15" height="13"></rect>
+                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <h4>Doorstep Delivery Verification (Twilio SMS OTP)</h4>
+                  <p class="otp-desc">
+                    Your package is out for delivery with <strong>{{ o.carrier }}</strong>. In accordance with delivery security protocols, a 6-digit Delivery OTP has been dispatched to your mobile phone <strong>({{ o.customerPhone || '+91 98765 43210' }})</strong> via Twilio SMS.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Twilio Demo Helper Badge -->
+              <div class="twilio-demo-pill" *ngIf="o.deliveryOtp" title="Simulated Twilio SMS payload">
+                <span class="twilio-tag">TWILIO SMS</span>
+                <span class="twilio-otp-code">OTP: {{ o.deliveryOtp }}</span>
+              </div>
+            </div>
+
+            <!-- OTP Input & Verify Controls -->
+            <div class="otp-input-action-row">
+              <div class="otp-input-wrap">
+                <label>Enter 6-Digit Delivery OTP</label>
+                <div class="input-with-button">
+                  <input 
+                    type="text" 
+                    [(ngModel)]="otpInputs[o.id]" 
+                    placeholder="e.g. 582910" 
+                    maxlength="6"
+                    class="otp-field"
+                    (keyup.enter)="verifyDeliveryOtp(o)"
+                  />
+                  <button 
+                    class="btn-verify-otp" 
+                    [disabled]="isVerifying[o.id]" 
+                    (click)="verifyDeliveryOtp(o)">
+                    <span *ngIf="!isVerifying[o.id]">Verify & Confirm Delivery ✓</span>
+                    <span *ngIf="isVerifying[o.id]">Verifying with Twilio...</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="otp-resend-wrap">
+                <button 
+                  class="btn-resend-sms" 
+                  [disabled]="isResending[o.id]" 
+                  (click)="resendOtp(o)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                  </svg>
+                  <span *ngIf="!isResending[o.id]">Resend OTP via Twilio</span>
+                  <span *ngIf="isResending[o.id]">Sending SMS...</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Case 2: DELIVERED - Successfully verified -->
+          <div class="delivered-success-card" *ngIf="o.fulfilmentStatus === 'DELIVERED'">
+            <div class="delivered-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="delivered-text">
+              <strong>Package Delivered & Handover Verified</strong>
+              <p>Delivery verified via Twilio OTP. Thank you for shopping with e-comm!</p>
+            </div>
+            <span class="delivery-done-tag">Handover Complete ✓</span>
+          </div>
+
+          <!-- Case 3: CONFIRMED - Preparing for dispatch -->
+          <div class="confirmed-info-card" *ngIf="o.fulfilmentStatus === 'CONFIRMED'">
+            <div class="info-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </div>
+            <div class="info-text">
+              <strong>Order Confirmed by Admin</strong>
+              <p>Warehouse is packing your items. Your Twilio delivery OTP will be activated as soon as the courier dispatches the shipment.</p>
+            </div>
+          </div>
+
+          <!-- Case 4: PROCESSING - Awaiting Admin Confirmation -->
+          <div class="processing-info-card" *ngIf="o.fulfilmentStatus === 'PROCESSING'">
+            <div class="info-icon text-amber">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div class="info-text">
+              <strong>Awaiting Store Admin Confirmation</strong>
+              <p>Payment received via Razorpay. The store operations team will confirm your order shortly from the admin fulfilment portal.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

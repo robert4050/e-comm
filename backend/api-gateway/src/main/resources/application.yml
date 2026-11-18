@@ -1,0 +1,90 @@
+server:
+  port: ${GATEWAY_PORT:${SERVER_PORT:8080}}
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:4200"
+              - "http://localhost:4201"
+              - "http://127.0.0.1:4200"
+              - "http://127.0.0.1:4201"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        # Product Service Route
+        - id: product-service-route
+          uri: ${PRODUCT_SERVICE_URL:http://product-service:8081}
+          predicates:
+            - Path=/api/v1/products/**
+
+        # Auth Service Route
+        - id: auth-service-route
+          uri: ${PRODUCT_SERVICE_URL:http://product-service:8081}
+          predicates:
+            - Path=/api/v1/auth/**
+
+        # User Service Route
+        - id: user-service-route
+          uri: ${PRODUCT_SERVICE_URL:http://product-service:8081}
+          predicates:
+            - Path=/api/v1/users/**
+
+        # Order Service Route
+        - id: order-service-route
+          uri: ${PRODUCT_SERVICE_URL:http://product-service:8081}
+          predicates:
+            - Path=/api/v1/orders/**
+
+        # Config Service Route (Public App Config)
+        - id: config-service-route
+          uri: ${PRODUCT_SERVICE_URL:http://product-service:8081}
+          predicates:
+            - Path=/api/v1/config/**
+
+        # Actuator and Health check Route
+        - id: product-service-health
+          uri: ${PRODUCT_SERVICE_URL:http://product-service:8081}
+          predicates:
+            - Path=/internal/products/actuator/**
+          filters:
+            - StripPrefix=2
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${CLERK_JWKS_URL:${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:https://clerk.e-comm.local/.well-known/jwks.json}}
+
+clerk:
+  publishable-key: ${CLERK_PUBLISHABLE_KEY:pk_test_placeholder}
+  secret-key: ${CLERK_SECRET_KEY:sk_test_placeholder}
+  issuer-uri: ${CLERK_ISSUER_URI:https://clerk.e-comm.local}
+  jwks-url: ${CLERK_JWKS_URL:https://clerk.e-comm.local/.well-known/jwks.json}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security: INFO

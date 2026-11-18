@@ -1,0 +1,106 @@
+<div class="orders-dashboard">
+  <!-- Orders Overview Card -->
+  <div class="dashboard-card orders-card">
+    <div class="card-header">
+      <div class="header-left">
+        <div class="header-icon-box">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="3" width="15" height="13"></rect>
+            <polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon>
+            <circle cx="5.5" cy="18.5" r="2.5"></circle>
+            <circle cx="18.5" cy="18.5" r="2.5"></circle>
+          </svg>
+        </div>
+        <div class="header-text">
+          <h3>Orders Overview</h3>
+          <p>Real-time total order count and fulfilment status</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <a routerLink="/orders" class="btn-orders-link">
+          <span>Go to Orders</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <!-- Big Hero Number of Orders -->
+      <div class="hero-orders-stat">
+        <div class="hero-metric-box">
+          <span class="hero-label">TOTAL STORE ORDERS</span>
+          <div class="hero-number">{{ totalOrders() }}</div>
+          <span class="hero-sub">Synchronized across microservices</span>
+        </div>
+      </div>
+
+      <!-- Breakdown by Fulfilment Status -->
+      <div class="status-summary-grid">
+        <div class="status-tile status-processing">
+          <div class="tile-icon">
+            <span class="pulse-indicator info"></span>
+          </div>
+          <div class="tile-info">
+            <span class="tile-label">Processing</span>
+            <div class="tile-count">{{ processingOrders() }}</div>
+          </div>
+        </div>
+
+        <div class="status-tile status-confirmed">
+          <div class="tile-icon">
+            <span class="pulse-indicator warning"></span>
+          </div>
+          <div class="tile-info">
+            <span class="tile-label">Confirmed</span>
+            <div class="tile-count">{{ confirmedOrders() }}</div>
+          </div>
+        </div>
+
+        <div class="status-tile status-shipped">
+          <div class="tile-icon">
+            <span class="pulse-indicator primary"></span>
+          </div>
+          <div class="tile-info">
+            <span class="tile-label">Shipped</span>
+            <div class="tile-count">{{ shippedOrders() }}</div>
+          </div>
+        </div>
+
+        <div class="status-tile status-delivered">
+          <div class="tile-icon">
+            <span class="pulse-indicator success"></span>
+          </div>
+          <div class="tile-info">
+            <span class="tile-label">Delivered</span>
+            <div class="tile-count">{{ deliveredOrders() }}</div>
+          </div>
+        </div>
+
+        <div class="status-tile status-cancelled">
+          <div class="tile-icon">
+            <span class="pulse-indicator danger"></span>
+          </div>
+          <div class="tile-info">
+            <span class="tile-label">Cancelled</span>
+            <div class="tile-count">{{ cancelledOrders() }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <a routerLink="/orders" class="btn-manage-orders">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1" y="3" width="15" height="13"></rect>
+          <polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon>
+          <circle cx="5.5" cy="18.5" r="2.5"></circle>
+          <circle cx="18.5" cy="18.5" r="2.5"></circle>
+        </svg>
+        <span>Manage All Orders in Orders & Fulfilment</span>
+      </a>
+    </div>
+  </div>
+</div>
