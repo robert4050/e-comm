@@ -2,10 +2,11 @@
   <div class="card-image-wrap">
     <img [src]="product.imageUrl" [alt]="product.name" class="card-img" />
     <span class="category-tag">{{ product.category }}</span>
+    <span class="brand-tag" *ngIf="product.brand">{{ product.brand }}</span>
   </div>
   <div class="card-body">
     <h4 class="product-title">{{ product.name }}</h4>
-    <p class="product-desc">{{ product.description | truncate:80 }}</p>
+    <p class="product-desc" [innerHTML]="product.description"></p>
     <div class="card-footer">
       <div class="price-wrap">
         <span class="amount">{{ product.price | priceFormat }}</span>

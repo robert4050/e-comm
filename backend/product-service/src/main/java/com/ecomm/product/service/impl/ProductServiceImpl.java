@@ -10,6 +10,7 @@ import com.ecomm.product.exception.ProductNotFoundException;
 import com.ecomm.product.kafka.ProductEventPublisher;
 import com.ecomm.product.repository.ProductRepository;
 import com.ecomm.product.search.repository.ProductSearchRepository;
+import com.ecomm.product.search.service.ProductSearchService;
 import com.ecomm.product.search.service.ProductSearchSyncService;
 import com.ecomm.product.service.ProductService;
 import org.slf4j.Logger;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Service
@@ -32,15 +34,18 @@ public class ProductServiceImpl implements ProductService {
     private final ProductEventPublisher eventPublisher;
     private final ProductSearchRepository productSearchRepository;
     private final ProductSearchSyncService searchSyncService;
+    private final ProductSearchService productSearchService;
 
     public ProductServiceImpl(ProductRepository productRepository,
                               ProductEventPublisher eventPublisher,
                               ProductSearchRepository productSearchRepository,
-                              ProductSearchSyncService searchSyncService) {
+                              ProductSearchSyncService searchSyncService,
+                              ProductSearchService productSearchService) {
         this.productRepository = productRepository;
         this.eventPublisher = eventPublisher;
         this.productSearchRepository = productSearchRepository;
         this.searchSyncService = searchSyncService;
+        this.productSearchService = productSearchService;
     }
 
     @Override
@@ -142,6 +147,27 @@ public class ProductServiceImpl implements ProductService {
         }
 
         return page.map(this::mapToResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> getProductsFiltered(String category, String brand, String query,
+                                                     BigDecimal minPrice, BigDecimal maxPrice,
+                                                     Boolean inStock, String sortBy, Pageable pageable) {
+        // If advanced filters are present, use the full Elasticsearch engine
+        if ((brand != null && !brand.isBlank() && !brand.equalsIgnoreCase("All")) ||
+            minPrice != null || maxPrice != null || Boolean.TRUE.equals(inStock) ||
+            (sortBy != null && !sortBy.isBlank() && !sortBy.equalsIgnoreCase("default"))) {
+            try {
+                Page<ProductResponse> results = productSearchService.searchAdvanced(category, brand, query, minPrice, maxPrice, inStock, sortBy, pageable);
+                if (results != null) {
+                    return results;
+                }
+            } catch (Exception e) {
+                log.warn("Advanced Elasticsearch query failed, falling back to database: {}", e.getMessage());
+            }
+        }
+        return getProducts(category, query, pageable);
     }
 
     @Override

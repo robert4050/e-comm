@@ -1,11 +1,13 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { CatalogService } from '../../services/catalog.service';
 import { CartService } from '../../../cart/services/cart.service';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { NotificationService } from '../../../../core/services/notification.service';
-import { Product } from '../../models/product.model';
+import { Product, SearchFacets } from '../../models/product.model';
 import { ProductCardComponent } from '../../components/product-card/product-card.component';
 
 export interface HeroSlide {
@@ -31,12 +33,26 @@ export class CatalogPageComponent implements OnInit, OnDestroy {
   private cartService = inject(CartService);
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   products: Product[] = [];
-  categories: string[] = ['All', 'Electronics', 'Audio', 'Wearables', 'Accessories'];
+  categories: string[] = ['All', 'Electronics', 'Audio', 'Wearables', 'Accessories', 'Mobile', 'Laptops', 'Cameras', 'Gaming', 'Home'];
   selectedCategory: string = 'All';
+  selectedBrand: string = 'All';
   searchQuery: string = '';
+  sortBy: string = 'default';
+  inStockOnly: boolean = false;
+  minPrice: number | null = null;
+  maxPrice: number | null = null;
   loading: boolean = false;
+
+  // Elasticsearch Facets
+  facets: SearchFacets | null = null;
+  brandList: { name: string; count: number }[] = [];
+  totalCatalogHits: number = 0;
+
+  private queryParamSub: Subscription | null = null;
 
   // Hero Carousel State
   currentSlide: number = 0;
@@ -83,12 +99,30 @@ export class CatalogPageComponent implements OnInit, OnDestroy {
   ];
 
   ngOnInit(): void {
-    this.fetchProducts();
     this.startAutoplay();
+    this.fetchFacets();
+
+    // Listen to query parameters from URL / Navbar search
+    this.queryParamSub = this.route.queryParams.subscribe(params => {
+      if (params['search'] !== undefined) {
+        this.searchQuery = params['search'];
+      }
+      if (params['category'] !== undefined) {
+        this.selectedCategory = params['category'];
+      }
+      if (params['brand'] !== undefined) {
+        this.selectedBrand = params['brand'];
+      }
+      this.fetchProducts();
+      this.fetchFacets();
+    });
   }
 
   ngOnDestroy(): void {
     this.stopAutoplay();
+    if (this.queryParamSub) {
+      this.queryParamSub.unsubscribe();
+    }
   }
 
   startAutoplay(): void {
@@ -138,9 +172,20 @@ export class CatalogPageComponent implements OnInit, OnDestroy {
 
   fetchProducts(): void {
     this.loading = true;
-    this.catalogService.getProducts(this.selectedCategory, this.searchQuery).subscribe({
+    this.catalogService.getProducts(
+      this.selectedCategory,
+      this.searchQuery,
+      0,
+      12,
+      this.selectedBrand,
+      this.minPrice ?? undefined,
+      this.maxPrice ?? undefined,
+      this.inStockOnly || undefined,
+      this.sortBy
+    ).subscribe({
       next: (response) => {
         this.products = response.content || [];
+        this.totalCatalogHits = response.totalElements;
         this.loading = false;
       },
       error: () => {
@@ -150,9 +195,54 @@ export class CatalogPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  fetchFacets(): void {
+    this.catalogService.getFacets(this.selectedCategory, this.searchQuery).subscribe({
+      next: (res) => {
+        this.facets = res;
+        if (res && res.brands) {
+          this.brandList = Object.entries(res.brands).map(([name, count]) => ({ name, count }));
+        }
+      },
+      error: (err) => {
+        console.warn('Failed to load dynamic facets from Elasticsearch:', err);
+      }
+    });
+  }
+
   onCategorySelect(category: string): void {
     this.selectedCategory = category;
+    this.selectedBrand = 'All'; // Reset brand on category switch
     this.fetchProducts();
+    this.fetchFacets();
+  }
+
+  onBrandSelect(brand: string): void {
+    this.selectedBrand = brand;
+    this.fetchProducts();
+  }
+
+  onSortChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.sortBy = select.value;
+    this.fetchProducts();
+  }
+
+  onInStockToggle(): void {
+    this.inStockOnly = !this.inStockOnly;
+    this.fetchProducts();
+  }
+
+  clearFilters(): void {
+    this.selectedCategory = 'All';
+    this.selectedBrand = 'All';
+    this.searchQuery = '';
+    this.sortBy = 'default';
+    this.inStockOnly = false;
+    this.minPrice = null;
+    this.maxPrice = null;
+    this.router.navigate(['/catalog']);
+    this.fetchProducts();
+    this.fetchFacets();
   }
 
   onAddToCart(product: Product): void {

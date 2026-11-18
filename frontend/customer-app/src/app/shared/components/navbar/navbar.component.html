@@ -37,15 +37,43 @@
       </a>
     </nav>
 
-    <!-- Search Bar -->
+    <!-- Search Bar with Elasticsearch Autocomplete Dropdown -->
     <div class="search-box">
       <input 
         type="text" 
         placeholder="Search products, brands, tech specs..." 
         [(ngModel)]="searchQuery"
+        (input)="onInput(searchQuery)"
+        (focus)="onFocus()"
+        (blur)="onBlur()"
         (keyup.enter)="onSearch()"
       />
-      <button class="search-btn" (click)="onSearch()">Search</button>
+      <button class="search-btn" (click)="onSearch()">
+        <span *ngIf="!isSearching">Search</span>
+        <span *ngIf="isSearching" class="nav-spinner"></span>
+      </button>
+
+      <!-- Autocomplete Suggestions Popover -->
+      <div class="search-suggestions-dropdown" *ngIf="showDropdown && suggestions.length > 0">
+        <div class="suggestions-header">
+          <span class="es-badge">⚡ Instant Search</span>
+          <span class="suggestions-count">{{ suggestions.length }} suggested</span>
+        </div>
+        <div 
+          class="suggestion-item" 
+          *ngFor="let s of suggestions" 
+          (mousedown)="onSelectSuggestion(s)">
+          <img [src]="s.imageUrl" [alt]="s.name" class="suggestion-thumb" />
+          <div class="suggestion-info">
+            <span class="suggestion-name">{{ s.name }}</span>
+            <div class="suggestion-meta">
+              <span class="suggestion-brand" *ngIf="s.brand">{{ s.brand }}</span>
+              <span class="suggestion-cat">{{ s.category }}</span>
+              <span class="suggestion-price">${{ s.price | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Actions -->

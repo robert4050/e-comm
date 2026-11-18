@@ -68,23 +68,107 @@
       (click)="onCategorySelect(cat)"
       class="cat-btn">
       {{ cat }}
+      <span class="pill-count" *ngIf="facets?.categories && facets!.categories[cat]">
+        ({{ facets!.categories[cat] }})
+      </span>
     </button>
+  </div>
+
+  <!-- Dynamic Brand Facets from Elasticsearch -->
+  <div class="brand-facets-bar" *ngIf="brandList.length > 0">
+    <span class="facet-label">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+      </svg>
+      Brand:
+    </span>
+    <div class="brand-pills">
+      <button 
+        class="brand-pill" 
+        [class.active]="selectedBrand === 'All'" 
+        (click)="onBrandSelect('All')">
+        All Brands
+      </button>
+      <button 
+        class="brand-pill" 
+        *ngFor="let b of brandList" 
+        [class.active]="selectedBrand === b.name" 
+        (click)="onBrandSelect(b.name)">
+        {{ b.name }}
+        <span class="pill-count">({{ b.count }})</span>
+      </button>
+    </div>
   </div>
 </section>
 
-<!-- Product Catalog Grid -->
+<!-- Product Catalog Main Area -->
 <main class="catalog-main">
-  <div class="catalog-header">
-    <h3>Available Catalog Products</h3>
-    <span class="catalog-count">{{ products.length }} items</span>
+  <!-- Controls & Sorting Toolbar -->
+  <div class="catalog-toolbar">
+    <div class="toolbar-left">
+      <div class="catalog-header-title">
+        <h3>Available Catalog Products</h3>
+        <span class="es-sync-badge" title="Live synchronized with Elasticsearch Cluster">
+          ⚡ Elasticsearch Powered
+        </span>
+      </div>
+      <span class="catalog-count">{{ totalCatalogHits || products.length }} items found</span>
+    </div>
+
+    <div class="toolbar-right">
+      <!-- In Stock Filter -->
+      <label class="instock-filter">
+        <input type="checkbox" [checked]="inStockOnly" (change)="onInStockToggle()" />
+        <span>In Stock Only</span>
+      </label>
+
+      <!-- Sort Dropdown -->
+      <div class="sort-box">
+        <label for="catalog-sort">Sort by:</label>
+        <select id="catalog-sort" class="sort-select" [value]="sortBy" (change)="onSortChange($event)">
+          <option value="default">Relevance (Best Match)</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+          <option value="name_asc">Name: A to Z</option>
+        </select>
+      </div>
+
+      <!-- Clear Filters Button -->
+      <button 
+        class="clear-filters-btn" 
+        *ngIf="selectedBrand !== 'All' || selectedCategory !== 'All' || searchQuery || sortBy !== 'default' || inStockOnly" 
+        (click)="clearFilters()">
+        ✕ Reset
+      </button>
+    </div>
+  </div>
+
+  <!-- Active Filter Summary Banner -->
+  <div class="active-filter-banner" *ngIf="searchQuery || selectedBrand !== 'All' || selectedCategory !== 'All'">
+    <span>Filtering by:</span>
+    <span class="filter-chip" *ngIf="searchQuery">Query: "{{ searchQuery }}"</span>
+    <span class="filter-chip" *ngIf="selectedCategory !== 'All'">Category: {{ selectedCategory }}</span>
+    <span class="filter-chip" *ngIf="selectedBrand !== 'All'">Brand: {{ selectedBrand }}</span>
+    <button class="chip-clear" (click)="clearFilters()">Clear All</button>
   </div>
 
   <div *ngIf="loading" class="loading-state">
     <div class="spinner"></div>
-    <p>Loading products from API Gateway...</p>
+    <p>Searching Elasticsearch cluster...</p>
   </div>
 
-  <div class="products-grid" *ngIf="!loading">
+  <div class="empty-state" *ngIf="!loading && products.length === 0">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      <line x1="8" y1="11" x2="14" y2="11"></line>
+    </svg>
+    <h4>No products match your search criteria</h4>
+    <p>Try searching with broader terms or clear your brand/category filters.</p>
+    <button class="btn btn-primary" (click)="clearFilters()">View All Products</button>
+  </div>
+
+  <div class="products-grid" *ngIf="!loading && products.length > 0">
     <app-product-card 
       *ngFor="let product of products" 
       [product]="product"
