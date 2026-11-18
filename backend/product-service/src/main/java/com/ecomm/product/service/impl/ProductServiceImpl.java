@@ -1,5 +1,6 @@
 package com.ecomm.product.service.impl;
 
+import com.ecomm.product.document.ProductDocument;
 import com.ecomm.product.dto.request.CreateProductRequest;
 import com.ecomm.product.dto.request.UpdateProductRequest;
 import com.ecomm.product.dto.ProductResponse;
@@ -8,9 +9,13 @@ import com.ecomm.product.exception.ProductAlreadyExistsException;
 import com.ecomm.product.exception.ProductNotFoundException;
 import com.ecomm.product.kafka.ProductEventPublisher;
 import com.ecomm.product.repository.ProductRepository;
+import com.ecomm.product.search.repository.ProductSearchRepository;
+import com.ecomm.product.search.service.ProductSearchSyncService;
 import com.ecomm.product.service.ProductService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,10 +30,17 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final ProductEventPublisher eventPublisher;
+    private final ProductSearchRepository productSearchRepository;
+    private final ProductSearchSyncService searchSyncService;
 
-    public ProductServiceImpl(ProductRepository productRepository, ProductEventPublisher eventPublisher) {
+    public ProductServiceImpl(ProductRepository productRepository,
+                              ProductEventPublisher eventPublisher,
+                              ProductSearchRepository productSearchRepository,
+                              ProductSearchSyncService searchSyncService) {
         this.productRepository = productRepository;
         this.eventPublisher = eventPublisher;
+        this.productSearchRepository = productSearchRepository;
+        this.searchSyncService = searchSyncService;
     }
 
     @Override
@@ -54,6 +66,7 @@ public class ProductServiceImpl implements ProductService {
                 .build();
 
         Product saved = productRepository.save(product);
+        searchSyncService.indexProduct(saved);
         ProductResponse response = mapToResponse(saved);
 
         eventPublisher.saveToOutbox("ProductCreated", response);
@@ -63,6 +76,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "products", key = "#id")
     public ProductResponse updateProduct(String id, UpdateProductRequest request) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
@@ -80,6 +94,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         Product updated = productRepository.save(product);
+        searchSyncService.indexProduct(updated);
         ProductResponse response = mapToResponse(updated);
 
         eventPublisher.saveToOutbox("ProductUpdated", response);
@@ -89,7 +104,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "products", key = "#id")
     public ProductResponse getProductById(String id) {
+        log.info("Fetching product details from MySQL database for ID: {}", id);
         return productRepository.findById(id)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new ProductNotFoundException(id));
@@ -98,8 +115,25 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public Page<ProductResponse> getProducts(String category, String query, Pageable pageable) {
+        // 1. If search query is provided, execute high-speed fuzzy search via Elasticsearch!
+        if (query != null && !query.isBlank()) {
+            try {
+                Page<ProductDocument> searchPage;
+                if (category != null && !category.isBlank() && !category.equalsIgnoreCase("All")) {
+                    searchPage = productSearchRepository.searchByCategoryAndFuzzyQuery(category, query.trim(), pageable);
+                } else {
+                    searchPage = productSearchRepository.searchByFuzzyQuery(query.trim(), pageable);
+                }
+                log.info("Elasticsearch fuzzy query '{}' returned {} results", query.trim(), searchPage.getTotalElements());
+                return searchPage.map(this::mapDocumentToResponse);
+            } catch (Exception e) {
+                log.warn("Elasticsearch search failed, falling back gracefully to MySQL: {}", e.getMessage());
+            }
+        }
+
+        // 2. Fallback or standard category browsing via MySQL JPA
         Page<Product> page;
-        if (category != null && !category.isBlank()) {
+        if (category != null && !category.isBlank() && !category.equalsIgnoreCase("All")) {
             page = productRepository.findByCategoryIgnoreCase(category, pageable);
         } else if (query != null && !query.isBlank()) {
             page = productRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(query, query, pageable);
@@ -112,12 +146,14 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "products", key = "#id")
     public ProductResponse publishProduct(String id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
 
         product.setStatus("PUBLISHED");
         Product saved = productRepository.save(product);
+        searchSyncService.indexProduct(saved);
         ProductResponse response = mapToResponse(saved);
 
         eventPublisher.saveToOutbox("ProductPublished", response);
@@ -127,12 +163,30 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "products", key = "#id")
     public void deleteProduct(String id) {
         if (!productRepository.existsById(id)) {
             throw new ProductNotFoundException(id);
         }
         productRepository.deleteById(id);
+        searchSyncService.deleteProduct(id);
         log.info("Deleted product with ID: {}", id);
+    }
+
+    private ProductResponse mapDocumentToResponse(ProductDocument doc) {
+        return ProductResponse.builder()
+                .id(doc.getId())
+                .sku(doc.getSku())
+                .name(doc.getName())
+                .description(doc.getDescription())
+                .price(doc.getPrice())
+                .category(doc.getCategory())
+                .brand(doc.getBrand())
+                .status(doc.getStatus())
+                .stockQuantity(doc.getStockQuantity())
+                .imageUrl(doc.getImageUrl())
+                .version(1L)
+                .build();
     }
 
     private ProductResponse mapToResponse(Product product) {
