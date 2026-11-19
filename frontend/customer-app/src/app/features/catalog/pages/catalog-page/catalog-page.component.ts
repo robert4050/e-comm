@@ -104,15 +104,9 @@ export class CatalogPageComponent implements OnInit, OnDestroy {
 
     // Listen to query parameters from URL / Navbar search
     this.queryParamSub = this.route.queryParams.subscribe(params => {
-      if (params['search'] !== undefined) {
-        this.searchQuery = params['search'];
-      }
-      if (params['category'] !== undefined) {
-        this.selectedCategory = params['category'];
-      }
-      if (params['brand'] !== undefined) {
-        this.selectedBrand = params['brand'];
-      }
+      this.searchQuery = params['search'] !== undefined ? params['search'] : '';
+      this.selectedCategory = params['category'] !== undefined ? params['category'] : 'All';
+      this.selectedBrand = params['brand'] !== undefined ? params['brand'] : 'All';
       this.fetchProducts();
       this.fetchFacets();
     });

@@ -154,10 +154,11 @@ public class ProductServiceImpl implements ProductService {
     public Page<ProductResponse> getProductsFiltered(String category, String brand, String query,
                                                      BigDecimal minPrice, BigDecimal maxPrice,
                                                      Boolean inStock, String sortBy, Pageable pageable) {
-        // If advanced filters are present, use the full Elasticsearch engine
+        // If advanced filters are present OR a search query is present, use the full Elasticsearch engine
         if ((brand != null && !brand.isBlank() && !brand.equalsIgnoreCase("All")) ||
             minPrice != null || maxPrice != null || Boolean.TRUE.equals(inStock) ||
-            (sortBy != null && !sortBy.isBlank() && !sortBy.equalsIgnoreCase("default"))) {
+            (sortBy != null && !sortBy.isBlank() && !sortBy.equalsIgnoreCase("default")) ||
+            (query != null && !query.isBlank())) {
             try {
                 Page<ProductResponse> results = productSearchService.searchAdvanced(category, brand, query, minPrice, maxPrice, inStock, sortBy, pageable);
                 if (results != null) {

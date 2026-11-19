@@ -40,31 +40,120 @@ public class ProductSearchService {
         this.elasticsearchOperations = elasticsearchOperations;
     }
 
+    private static final java.util.regex.Pattern BETWEEN_PRICE_PATTERN =
+            java.util.regex.Pattern.compile("(?i)\\bbetween\\s+\\$?(\\d+(?:\\.\\d+)?)\\s+(?:and|-)\\s+\\$?(\\d+(?:\\.\\d+)?)\\b");
+
+    private static final java.util.regex.Pattern UNDER_PRICE_PATTERN =
+            java.util.regex.Pattern.compile("(?i)\\b(under|below|less than|cheaper than|max|up to|<)\\s*\\$?(\\d+(?:\\.\\d+)?)\\b");
+
+    private static final java.util.regex.Pattern ABOVE_PRICE_PATTERN =
+            java.util.regex.Pattern.compile("(?i)\\b(above|over|more than|min|starting from|>)\\s*\\$?(\\d+(?:\\.\\d+)?)\\b");
+
+    public static class QueryIntent {
+        private final String cleanQuery;
+        private final BigDecimal minPrice;
+        private final BigDecimal maxPrice;
+
+        public QueryIntent(String cleanQuery, BigDecimal minPrice, BigDecimal maxPrice) {
+            this.cleanQuery = cleanQuery;
+            this.minPrice = minPrice;
+            this.maxPrice = maxPrice;
+        }
+
+        public String getCleanQuery() { return cleanQuery; }
+        public BigDecimal getMinPrice() { return minPrice; }
+        public BigDecimal getMaxPrice() { return maxPrice; }
+        public boolean hasPriceFilter() { return minPrice != null || maxPrice != null; }
+    }
+
+    public QueryIntent parseQueryIntent(String query) {
+        if (query == null || query.isBlank()) {
+            return new QueryIntent("", null, null);
+        }
+
+        String working = query.trim();
+        BigDecimal min = null;
+        BigDecimal max = null;
+
+        // 1. Between X and Y
+        var betweenMatcher = BETWEEN_PRICE_PATTERN.matcher(working);
+        if (betweenMatcher.find()) {
+            try {
+                min = new BigDecimal(betweenMatcher.group(1));
+                max = new BigDecimal(betweenMatcher.group(2));
+                working = betweenMatcher.replaceFirst("").trim();
+            } catch (Exception ignored) {}
+        }
+
+        // 2. Under / Below X
+        var underMatcher = UNDER_PRICE_PATTERN.matcher(working);
+        if (underMatcher.find()) {
+            try {
+                max = new BigDecimal(underMatcher.group(2));
+                working = underMatcher.replaceFirst("").trim();
+            } catch (Exception ignored) {}
+        }
+
+        // 3. Above / Over X
+        var aboveMatcher = ABOVE_PRICE_PATTERN.matcher(working);
+        if (aboveMatcher.find()) {
+            try {
+                min = new BigDecimal(aboveMatcher.group(2));
+                working = aboveMatcher.replaceFirst("").trim();
+            } catch (Exception ignored) {}
+        }
+
+        working = working.replaceAll("\\s+", " ").trim();
+        return new QueryIntent(working, min, max);
+    }
+
     /**
-     * Instant search-as-you-type suggestions with prefix matching and highlighting
+     * Instant search-as-you-type suggestions with natural language price intent matching
      */
     public List<SuggestionDto> getSuggestions(String prefix) {
         if (prefix == null || prefix.trim().isBlank()) {
             return Collections.emptyList();
         }
 
-        String cleanPrefix = prefix.trim();
+        QueryIntent intent = parseQueryIntent(prefix);
+        String cleanText = intent.getCleanQuery();
+        if (cleanText.isBlank()) {
+            cleanText = prefix.trim();
+        }
+        final String effectiveText = cleanText;
 
         try {
             NativeQuery query = NativeQuery.builder()
-                    .withQuery(q -> q.bool(b -> b
-                            .should(s -> s.matchPhrasePrefix(mpp -> mpp.field("name").query(cleanPrefix).boost(3.0f)))
-                            .should(s -> s.prefix(p -> p.field("brand").value(cleanPrefix.toLowerCase()).boost(2.0f)))
-                            .should(s -> s.fuzzy(f -> f.field("name").value(cleanPrefix)))
-                    ))
+                    .withQuery(q -> q.bool(b -> {
+                        b.should(s -> s.matchPhrasePrefix(mpp -> mpp.field("name").query(effectiveText).boost(4.0f)));
+                        b.should(s -> s.prefix(p -> p.field("brand").value(effectiveText.toLowerCase()).boost(3.0f)));
+                        b.should(s -> s.multiMatch(mm -> mm
+                                .query(effectiveText)
+                                .fields("name^3", "brand^2", "category", "description")
+                                .fuzziness("AUTO")
+                                .boost(2.0f)));
+
+                        if (intent.getMinPrice() != null || intent.getMaxPrice() != null) {
+                            b.filter(f -> f.range(r -> {
+                                r.field("price");
+                                if (intent.getMinPrice() != null) r.gte(JsonData.of(intent.getMinPrice().doubleValue()));
+                                if (intent.getMaxPrice() != null) r.lte(JsonData.of(intent.getMaxPrice().doubleValue()));
+                                return r;
+                            }));
+                        }
+                        b.minimumShouldMatch("1");
+                        return b;
+                    }))
                     .withPageable(PageRequest.of(0, 6))
                     .build();
 
             SearchHits<ProductDocument> searchHits = elasticsearchOperations.search(query, ProductDocument.class);
 
-            return searchHits.getSearchHits().stream().map(hit -> {
+            List<SuggestionDto> suggestions = new ArrayList<>();
+
+            for (SearchHit<ProductDocument> hit : searchHits.getSearchHits()) {
                 ProductDocument doc = hit.getContent();
-                return new SuggestionDto(
+                suggestions.add(new SuggestionDto(
                         doc.getId(),
                         doc.getName(),
                         doc.getBrand(),
@@ -72,11 +161,13 @@ public class ProductSearchService {
                         doc.getPrice(),
                         doc.getImageUrl(),
                         doc.getName()
-                );
-            }).collect(Collectors.toList());
+                ));
+            }
+
+            return suggestions;
 
         } catch (Exception e) {
-            log.warn("Elasticsearch suggestions failed for '{}': {}", cleanPrefix, e.getMessage());
+            log.warn("Elasticsearch suggestions failed for '{}': {}", prefix, e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -88,17 +179,29 @@ public class ProductSearchService {
         try {
             NativeQueryBuilder queryBuilder = NativeQuery.builder().withMaxResults(0);
 
+            QueryIntent intent = parseQueryIntent(query);
+            String effectiveQuery = intent.getCleanQuery();
+
             // Optional filters if user is already browsing inside a category or query
             if ((category != null && !category.isBlank() && !category.equalsIgnoreCase("All")) ||
-                (query != null && !query.isBlank())) {
+                (effectiveQuery != null && !effectiveQuery.isBlank()) ||
+                intent.hasPriceFilter()) {
                 queryBuilder.withQuery(q -> q.bool(b -> {
                     if (category != null && !category.isBlank() && !category.equalsIgnoreCase("All")) {
                         b.filter(f -> f.term(t -> t.field("category").value(category)));
                     }
-                    if (query != null && !query.isBlank()) {
-                        b.must(m -> m.multiMatch(mm -> mm.query(query.trim())
-                                .fields("name^3", "brand^2", "description")
+                    if (effectiveQuery != null && !effectiveQuery.isBlank()) {
+                        b.must(m -> m.multiMatch(mm -> mm.query(effectiveQuery.trim())
+                                .fields("name^3", "brand^2", "description", "category")
                                 .fuzziness("AUTO")));
+                    }
+                    if (intent.getMinPrice() != null || intent.getMaxPrice() != null) {
+                        b.filter(f -> f.range(r -> {
+                            r.field("price");
+                            if (intent.getMinPrice() != null) r.gte(JsonData.of(intent.getMinPrice().doubleValue()));
+                            if (intent.getMaxPrice() != null) r.lte(JsonData.of(intent.getMaxPrice().doubleValue()));
+                            return r;
+                        }));
                     }
                     return b;
                 }));
@@ -170,8 +273,14 @@ public class ProductSearchService {
             Pageable cleanPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
             NativeQueryBuilder queryBuilder = NativeQuery.builder().withPageable(cleanPageable);
 
+            // Natural language price intent extraction (e.g. "laptop under 1000" -> clean: "laptop", maxPrice: 1000)
+            QueryIntent intent = parseQueryIntent(query);
+            String effectiveQuery = intent.getCleanQuery();
+            BigDecimal effectiveMinPrice = minPrice != null ? minPrice : intent.getMinPrice();
+            BigDecimal effectiveMaxPrice = maxPrice != null ? maxPrice : intent.getMaxPrice();
+
             // Highlighting configuration: wrap matching words with <mark> if query is present
-            if (query != null && !query.trim().isBlank()) {
+            if (effectiveQuery != null && !effectiveQuery.trim().isBlank()) {
                 queryBuilder.withHighlightQuery(new HighlightQuery(
                         new Highlight(List.of(
                                 new HighlightField("name"),
@@ -184,9 +293,9 @@ public class ProductSearchService {
             // Bool Query Construction
             queryBuilder.withQuery(q -> q.bool(b -> {
                 // Fuzzy query if keyword provided
-                if (query != null && !query.trim().isBlank()) {
+                if (effectiveQuery != null && !effectiveQuery.trim().isBlank()) {
                     b.must(m -> m.multiMatch(mm -> mm
-                            .query(query.trim())
+                            .query(effectiveQuery.trim())
                             .fields("name^3", "brand^2", "description", "category")
                             .fuzziness("AUTO")));
                 }
@@ -201,12 +310,12 @@ public class ProductSearchService {
                     b.filter(f -> f.term(t -> t.field("brand").value(brand)));
                 }
 
-                // Price range filter
-                if (minPrice != null || maxPrice != null) {
+                // Price range filter (combines explicit filters + natural language intent)
+                if (effectiveMinPrice != null || effectiveMaxPrice != null) {
                     b.filter(f -> f.range(r -> {
                         r.field("price");
-                        if (minPrice != null) r.gte(JsonData.of(minPrice.doubleValue()));
-                        if (maxPrice != null) r.lte(JsonData.of(maxPrice.doubleValue()));
+                        if (effectiveMinPrice != null) r.gte(JsonData.of(effectiveMinPrice.doubleValue()));
+                        if (effectiveMaxPrice != null) r.lte(JsonData.of(effectiveMaxPrice.doubleValue()));
                         return r;
                     }));
                 }
